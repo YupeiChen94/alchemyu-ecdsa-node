@@ -1,16 +1,24 @@
 import server from "./server";
+import localWallet from "./LocalWallet";
 
-function Wallet({ address, setAddress, balance, setBalance }) {
-  async function onChange(evt) {
-    const address = evt.target.value;
-    setAddress(address);
-    if (address) {
+function Wallet({ senderBalance, senderSetBalance, senderUser, senderSetUser,  }) {
+
+  /**
+   * On user selection, update the user account balance.
+   * @param {object} evt - the DOM event containing the selected username.
+   */
+  async function onSelectUser(evt) {
+    const selectedUser = evt.target.value;
+    senderSetUser(selectedUser);
+
+    if (selectedUser) {
+      const address = localWallet.getAddress(selectedUser);
       const {
         data: { balance },
       } = await server.get(`balance/${address}`);
-      setBalance(balance);
+      senderSetBalance(balance);
     } else {
-      setBalance(0);
+      senderSetBalance(0);
     }
   }
 
@@ -20,10 +28,18 @@ function Wallet({ address, setAddress, balance, setBalance }) {
 
       <label>
         Wallet Address
-        <input placeholder="Type an address, for example: 0x1" value={address} onChange={onChange}></input>
+        <select onChange={onSelectUser} value={senderUser}>
+          <option value="">--- Please choose a user wallet ---</option>
+          {localWallet.USERS.map((u, i) => (
+              <option key={i} value={u}>
+                {u}
+              </option>
+          ))}
+        </select>
       </label>
 
-      <div className="balance">Balance: {balance}</div>
+      <div className="balance">Address: {localWallet.getAddress(senderUser)}</div>
+      <div className="balance">Balance: {senderBalance}</div>
     </div>
   );
 }

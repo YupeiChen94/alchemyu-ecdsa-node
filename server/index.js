@@ -1,15 +1,17 @@
 const express = require("express");
-const app = express();
 const cors = require("cors");
+const crypto = require("./crypto");
+
+const app = express();
 const port = 3042;
 
 app.use(cors());
 app.use(express.json());
 
 const balances = {
-  "0x1": 100,
-  "0x2": 50,
-  "0x3": 75,
+  "FEB2CB0643A133E7D00854B311F0B27A9A4567D4": 100, // yupei
+  "93BEDAF421F4E7611F50D3E99DD3B3F68809A277": 50, // tommy
+  "9565185604F0803D8E818F1AE03E99B03B2D900B": 75, // eric
 };
 
 app.get("/balance/:address", (req, res) => {
@@ -19,17 +21,21 @@ app.get("/balance/:address", (req, res) => {
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
+  const { message, signature } = req.body;
+  const { amount, recipientAddress } = message;
+
+  const pubKey = crypto.signatureToPubKey(message, signature);
+  const sender = crypto.pubKeyToAddress(pubKey);
 
   setInitialBalance(sender);
-  setInitialBalance(recipient);
+  setInitialBalance(recipientAddress);
 
   if (balances[sender] < amount) {
     res.status(400).send({ message: "Not enough funds!" });
   } else {
     balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
+    balances[recipientAddress] += amount;
+    res.send({ senderBalanceReturn: balances[sender], recipientBalanceReturn: balances[recipientAddress] });
   }
 });
 
